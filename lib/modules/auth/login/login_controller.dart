@@ -61,8 +61,12 @@ class LoginController extends GetxController {
             AppRoutes.superAdminDashboard,
           );
         } else if (role == 'admin') {
+          final service =
+              user?['adminService']?.toString().toLowerCase() ?? '';
           Get.offAllNamed(
-            AppRoutes.adminDashboard,
+            service == 'doctor' || service == 'hospital'
+                ? AppRoutes.doctorQueueAdmin
+                : AppRoutes.adminDashboard,
           );
         } else {
           // عام User کے لیے پہلے لازمی
