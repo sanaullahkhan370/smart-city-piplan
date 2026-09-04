@@ -14,6 +14,9 @@ class SuperAdminController extends GetxController {
       <Map<String, dynamic>>[].obs;
 
   final RxBool isLoading = false.obs;
+  final RxBool isDetailsLoading = false.obs;
+  final Rxn<Map<String, dynamic>> selectedAdminDetails =
+      Rxn<Map<String, dynamic>>();
   final RxBool isProcessing = false.obs;
   final RxString errorMessage = ''.obs;
 
@@ -316,6 +319,113 @@ class SuperAdminController extends GetxController {
       }
     } catch (error) {
       Get.snackbar('Error', error.toString());
+    } finally {
+      isProcessing.value = false;
+    }
+  }
+
+
+  Future<Map<String, dynamic>?> loadAdminDetails(String adminId) async {
+    try {
+      isDetailsLoading.value = true;
+      selectedAdminDetails.value = null;
+      final token = storage.readToken();
+      final response = await api.get(
+        '$baseUrl/api/admins/$adminId',
+        headers: {'Authorization': 'Bearer $token'},
+      );
+
+      if (response.statusCode == 200 && response.body['success'] == true) {
+        final details = Map<String, dynamic>.from(response.body['data']);
+        selectedAdminDetails.value = details;
+        return details;
+      }
+
+      Get.snackbar(
+        'Error',
+        response.body?['message'] ?? 'Admin details could not be loaded',
+      );
+      return null;
+    } catch (error) {
+      Get.snackbar('Error', error.toString());
+      return null;
+    } finally {
+      isDetailsLoading.value = false;
+    }
+  }
+
+  Future<bool> updateAdmin({
+    required String adminId,
+    required String name,
+    required String email,
+    required String phone,
+    required String adminService,
+    required bool isActive,
+    String password = '',
+  }) async {
+    try {
+      isProcessing.value = true;
+      final token = storage.readToken();
+      final body = <String, dynamic>{
+        'name': name.trim(),
+        'email': email.trim(),
+        'phone': phone.trim(),
+        'adminService': adminService,
+        'isActive': isActive,
+      };
+      if (password.trim().isNotEmpty) body['password'] = password;
+
+      final response = await api.patch(
+        '$baseUrl/api/admins/$adminId',
+        body,
+        headers: {'Authorization': 'Bearer $token'},
+      );
+
+      if (response.statusCode == 200 && response.body['success'] == true) {
+        await loadAdmins();
+        await loadAdminDetails(adminId);
+        Get.snackbar('Success', 'Admin updated successfully');
+        return true;
+      }
+
+      Get.snackbar(
+        'Update Failed',
+        response.body?['message'] ?? 'Admin could not be updated',
+      );
+      return false;
+    } catch (error) {
+      Get.snackbar('Error', error.toString());
+      return false;
+    } finally {
+      isProcessing.value = false;
+    }
+  }
+
+  Future<bool> deleteAdmin(String adminId) async {
+    try {
+      isProcessing.value = true;
+      final token = storage.readToken();
+      final response = await api.delete(
+        '$baseUrl/api/admins/$adminId',
+        headers: {'Authorization': 'Bearer $token'},
+      );
+
+      if (response.statusCode == 200 && response.body['success'] == true) {
+        selectedAdminDetails.value = null;
+        await loadAdmins();
+        Get.snackbar('Deleted', 'Admin deleted successfully');
+        return true;
+      }
+
+      Get.snackbar(
+        'Delete Blocked',
+        response.body?['message'] ?? 'Admin could not be deleted',
+        duration: const Duration(seconds: 5),
+      );
+      return false;
+    } catch (error) {
+      Get.snackbar('Error', error.toString());
+      return false;
     } finally {
       isProcessing.value = false;
     }
