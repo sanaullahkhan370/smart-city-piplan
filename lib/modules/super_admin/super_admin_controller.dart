@@ -217,7 +217,7 @@ class SuperAdminController extends GetxController {
   }
 
   bool supportsVehicle(String? service) {
-    return const {'rickshaw', 'mazda', 'pickup', 'ambulance'}
+    return const {'rickshaw', 'mazda', 'pickup'}
         .contains(service?.toLowerCase());
   }
 
