@@ -216,6 +216,75 @@ class SuperAdminController extends GetxController {
     }
   }
 
+  bool supportsVehicle(String? service) {
+    return const {'rickshaw', 'mazda', 'pickup', 'ambulance'}
+        .contains(service?.toLowerCase());
+  }
+
+  Future<bool> assignVehicle({
+    required String ownerId,
+    required String serviceType,
+    required String driverName,
+    required String phone,
+    required String whatsappNumber,
+    required String driverImage,
+    required String vehicleImage,
+    required String vehicleNumber,
+    required String vehicleType,
+    required String address,
+    required double capacityKg,
+    required List<String> features,
+  }) async {
+    try {
+      isProcessing.value = true;
+      final token = storage.readToken();
+
+      final response = await api.post(
+        '$baseUrl/api/vehicles',
+        {
+          'owner': ownerId,
+          'serviceType': serviceType.toLowerCase(),
+          'driverName': driverName.trim(),
+          'phone': phone.trim(),
+          'whatsappNumber': whatsappNumber.trim(),
+          'driverImage': driverImage.trim(),
+          'vehicleImage': vehicleImage.trim(),
+          'vehicleNumber': vehicleNumber.trim(),
+          'vehicleType': vehicleType.trim(),
+          'address': address.trim(),
+          'capacityKg': capacityKg,
+          'features': features,
+          'isVerified': true,
+          'isOnline': true,
+          'status': 'available',
+        },
+        headers: {
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      if (response.statusCode == 201 &&
+          response.body['success'] == true) {
+        Get.snackbar(
+          'Vehicle Assigned',
+          '$serviceType vehicle assigned successfully',
+        );
+        return true;
+      }
+
+      Get.snackbar(
+        'Assignment Failed',
+        response.body?['message'] ?? 'Vehicle could not be assigned',
+      );
+      return false;
+    } catch (error) {
+      Get.snackbar('Error', error.toString());
+      return false;
+    } finally {
+      isProcessing.value = false;
+    }
+  }
+
   Future<void> updateAdminStatus(
     String adminId,
     bool isActive,
