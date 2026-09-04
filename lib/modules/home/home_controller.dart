@@ -7,238 +7,121 @@ import '../../core/storage/storage_service.dart';
 import '../../data/services/rating_guard_service.dart';
 
 class HomeController extends GetxController {
-  final StorageService storage =
-  Get.find<StorageService>();
-
-  final RatingGuardService ratingGuardService =
-  RatingGuardService();
+  final StorageService storage = Get.find<StorageService>();
+  final RatingGuardService ratingGuardService = RatingGuardService();
 
   final RxBool isCheckingRating = false.obs;
-
   final RxString userName = 'User'.obs;
   final RxInt selectedIndex = 0.obs;
+  final RxString searchQuery = ''.obs;
+  final RxString selectedCategory = 'All'.obs;
+
+  final List<String> categories = const [
+    'All',
+    'Emergency',
+    'Health',
+    'Local Transport',
+    'Travel',
+    'Shopping',
+  ];
 
   @override
   void onInit() {
     super.onInit();
-
     loadUser();
   }
 
   @override
   void onReady() {
     super.onReady();
-
-    // Home دکھانے کے فوراً بعد check ہوگا
-    // کہ کوئی completed unrated trip تو نہیں
     checkRequiredRating();
   }
 
-  // ==================================
-  // MANDATORY RATING CHECK
-  // ==================================
-
   Future<void> checkRequiredRating() async {
-    if (isCheckingRating.value) {
-      return;
-    }
+    if (isCheckingRating.value) return;
 
     try {
       isCheckingRating.value = true;
-
-      final bool ratingRequired =
-      await ratingGuardService
-          .hasCompletedUnratedBooking();
-
-      if (ratingRequired) {
-        Get.offAllNamed(
-          AppRoutes.requiredRating,
-        );
-      }
+      final required = await ratingGuardService.hasCompletedUnratedBooking();
+      if (required) Get.offAllNamed(AppRoutes.requiredRating);
     } catch (_) {
-      // Rating verification fail ہو تو
-      // Required Rating page کھلے گا
-      Get.offAllNamed(
-        AppRoutes.requiredRating,
-      );
+      Get.offAllNamed(AppRoutes.requiredRating);
     } finally {
       isCheckingRating.value = false;
     }
   }
 
-  // ==================================
-  // LOAD USER INFORMATION
-  // ==================================
-
   void loadUser() {
-    final String? userJson =
-    storage.readUser();
-
-    if (userJson == null ||
-        userJson.isEmpty) {
-      userName.value = 'User';
-      return;
-    }
+    final userJson = storage.readUser();
+    if (userJson == null || userJson.isEmpty) return;
 
     try {
-      final Map<String, dynamic> data =
-      jsonDecode(userJson)
-      as Map<String, dynamic>;
-
-      userName.value =
-          data['name']?.toString() ??
-              'User';
+      final data = jsonDecode(userJson) as Map<String, dynamic>;
+      userName.value = data['name']?.toString() ?? 'User';
     } catch (_) {
       userName.value = 'User';
     }
   }
 
-  // ==================================
-  // GENERIC VEHICLE NAVIGATION
-  // ==================================
+  void updateSearch(String value) => searchQuery.value = value.trim().toLowerCase();
+  void selectCategory(String value) => selectedCategory.value = value;
 
-  void openVehicles({
-    required String serviceType,
-    required String title,
-  }) {
+  void openVehicles({required String serviceType, required String title}) {
     Get.toNamed(
       AppRoutes.vehicles,
       arguments: {
-        'serviceType':
-        serviceType.trim().toLowerCase(),
+        'serviceType': serviceType.trim().toLowerCase(),
         'title': title.trim(),
       },
     );
   }
 
-  // Ambulance card
-  void openAmbulances() {
-    openVehicles(
-      serviceType: 'ambulance',
-      title: 'Ambulances',
-    );
-  }
+  void openAmbulances() =>
+      openVehicles(serviceType: 'ambulance', title: 'Ambulances');
+  void openRickshaws() =>
+      openVehicles(serviceType: 'rickshaw', title: 'Rickshaws');
+  void openMazda() => openVehicles(serviceType: 'mazda', title: 'Mazda');
+  void openPickups() =>
+      openVehicles(serviceType: 'pickup', title: 'Pickups');
 
-  // Rickshaw card
-  void openRickshaws() {
-    openVehicles(
-      serviceType: 'rickshaw',
-      title: 'Rickshaws',
-    );
-  }
+  void openHospitals() => Get.toNamed(
+        AppRoutes.medical,
+        arguments: {'section': 'hospitals'},
+      );
 
-  // Mazda card
-  void openMazda() {
-    openVehicles(
-      serviceType: 'mazda',
-      title: 'Mazda',
-    );
-  }
+  void openDoctors() => Get.toNamed(
+        AppRoutes.medical,
+        arguments: {'section': 'doctors'},
+      );
 
-  // Pickup card
-  void openPickups() {
-    openVehicles(
-      serviceType: 'pickup',
-      title: 'Pickups',
-    );
-  }
+  void openMedical() => Get.toNamed(AppRoutes.medical);
+  void openMyBookings() => Get.toNamed(AppRoutes.myBookings);
 
-  // Truck card
-  void openTrucks() {
-    openVehicles(
-      serviceType: 'truck',
-      title: 'Trucks',
-    );
-  }
-
-  // ==================================
-  // OTHER NAVIGATION
-  // ==================================
-
-  void openMedical() {
-    Get.toNamed(
-      AppRoutes.medical,
-    );
-  }
-
-  void openMyBookings() {
-    Get.toNamed(
-      AppRoutes.myBookings,
-    );
-  }
-
-  void openComplaints() {
-    showComingSoon('Complaints');
-  }
-
-  void openBills() {
-    showComingSoon('Bills');
-  }
-
-  void openServices() {
-    showComingSoon('City Services');
-  }
-
-  void openAnnouncements() {
-    showComingSoon('Announcements');
-  }
-
-  void openEmergency() {
-    showComingSoon(
-      'Emergency Services',
-    );
-  }
-
-  void openProperty() {
-    showComingSoon(
-      'Property Information',
-    );
-  }
-
-  // ==================================
-  // BOTTOM NAVIGATION
-  // ==================================
+  void openIntercityTransport() =>
+      showComingSoon('Intercity Transport');
+  void openShops() => showComingSoon('Shops & Market');
+  void openEmergency() => showComingSoon('Emergency Services');
+  void openNotifications() => showComingSoon('Notifications');
+  void openProfile() => showComingSoon('Profile');
 
   void changeBottomPage(int index) {
     selectedIndex.value = index;
-
-    if (index == 1) {
-      showComingSoon(
-        'Notifications',
-      );
-    } else if (index == 2) {
-      showComingSoon(
-        'Profile',
-      );
-    }
+    if (index == 1) openNotifications();
+    if (index == 2) openMyBookings();
+    if (index == 3) openProfile();
   }
 
-  // ==================================
-  // COMING SOON MESSAGE
-  // ==================================
-
-  void showComingSoon(
-      String featureName,
-      ) {
+  void showComingSoon(String featureName) {
     Get.snackbar(
       featureName,
-      '$featureName module will be added soon.',
-      snackPosition:
-      SnackPosition.BOTTOM,
-      duration:
-      const Duration(seconds: 2),
+      '$featureName module will be connected soon.',
+      snackPosition: SnackPosition.BOTTOM,
+      duration: const Duration(seconds: 2),
     );
   }
-
-  // ==================================
-  // LOGOUT
-  // ==================================
 
   Future<void> logout() async {
     await storage.clearAll();
-
-    Get.offAllNamed(
-      AppRoutes.login,
-    );
+    Get.offAllNamed(AppRoutes.login);
   }
 }
