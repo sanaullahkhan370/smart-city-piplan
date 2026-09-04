@@ -1,8 +1,10 @@
 import 'package:get/get.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../../core/storage/storage_service.dart';
 
 class HospitalController extends GetxController {
   final GetConnect api = GetConnect();
+  final StorageService storage = Get.find<StorageService>();
   final facilities = <Map<String, dynamic>>[].obs;
   final filteredFacilities = <Map<String, dynamic>>[].obs;
   final isLoading = false.obs;
@@ -65,6 +67,67 @@ class HospitalController extends GetxController {
                 (item['specialist']?.toString().toLowerCase().contains(query) ?? false);
           });
     }));
+  }
+
+
+  Future<Map<String, dynamic>?> loadQueueStatus(
+    String facilityId,
+    String doctorId,
+  ) async {
+    try {
+      final response = await api.get(
+        '$baseUrl/api/doctor-queue/public/$facilityId/$doctorId',
+      );
+      if (response.statusCode == 200 && response.body['success'] == true) {
+        return Map<String, dynamic>.from(response.body['data']);
+      }
+      Get.snackbar(
+        'Queue unavailable',
+        response.body?['message'] ?? 'Unable to load doctor queue',
+      );
+      return null;
+    } catch (error) {
+      Get.snackbar('Queue Error', error.toString());
+      return null;
+    }
+  }
+
+  Future<Map<String, dynamic>?> takeToken(
+    String facilityId,
+    String doctorId,
+  ) async {
+    try {
+      final token = storage.readToken();
+      if (token == null || token.isEmpty) {
+        Get.snackbar('Login Required', 'Please login to get a doctor token');
+        return null;
+      }
+      final response = await api.post(
+        '$baseUrl/api/doctor-queue/tokens',
+        {'facilityId': facilityId, 'doctorId': doctorId},
+        headers: {'Authorization': 'Bearer $token'},
+      );
+      final body = response.body;
+      if ((response.statusCode == 201 || response.statusCode == 409) &&
+          body is Map) {
+        if (response.statusCode == 201 && body['success'] == true) {
+          Get.snackbar('Token Confirmed', body['message'] ?? 'Token issued');
+        } else {
+          Get.snackbar('Existing Token', body['message'] ?? 'Token already exists');
+        }
+        return body['data'] is Map
+            ? Map<String, dynamic>.from(body['data'])
+            : null;
+      }
+      Get.snackbar(
+        'Token Failed',
+        body is Map ? body['message']?.toString() ?? 'Unable to get token' : 'Unable to get token',
+      );
+      return null;
+    } catch (error) {
+      Get.snackbar('Token Error', error.toString());
+      return null;
+    }
   }
 
   Future<void> call(String? number) async {
