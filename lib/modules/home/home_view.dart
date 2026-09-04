@@ -120,14 +120,16 @@ class HomeView extends GetView<HomeController> {
             SizedBox(
               height: 42,
               child: Obx(
-                () => ListView.separated(
+                () {
+                  final selectedCategory =
+                      controller.selectedCategory.value;
+                  return ListView.separated(
                   scrollDirection: Axis.horizontal,
                   itemCount: controller.categories.length,
                   separatorBuilder: (_, __) => const SizedBox(width: 8),
                   itemBuilder: (_, index) {
                     final category = controller.categories[index];
-                    final selected =
-                        controller.selectedCategory.value == category;
+                    final selected = selectedCategory == category;
                     return ChoiceChip(
                       label: Text(category),
                       selected: selected,
@@ -141,7 +143,8 @@ class HomeView extends GetView<HomeController> {
                       side: BorderSide.none,
                     );
                   },
-                ),
+                );
+                },
               ),
             ),
             const SizedBox(height: 22),
