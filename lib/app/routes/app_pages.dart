@@ -7,6 +7,8 @@ import '../../modules/home/home_binding.dart';
 import '../../modules/home/home_view.dart';
 import '../../modules/medical/medical_binding.dart';
 import '../../modules/medical/medical_view.dart';
+import '../../modules/hospital/hospital_binding.dart';
+import '../../modules/hospital/hospital_view.dart';
 import '../../modules/ambulance/ambulance_binding.dart';
 import '../../modules/ambulance/ambulance_view.dart';
 import '../../modules/super_admin/super_admin_binding.dart';
@@ -46,6 +48,11 @@ class AppPages {
       name: AppRoutes.medical,
       page: () => const MedicalView(),
       binding: MedicalBinding(),
+    ),
+    GetPage(
+      name: AppRoutes.hospitals,
+      page: () => const HospitalView(),
+      binding: HospitalBinding(),
     ),
     GetPage(
       name: AppRoutes.ambulance,
