@@ -4,6 +4,7 @@ abstract class AppRoutes {
   static const register = '/register';
   static const medical = '/medical';
   static const ambulance = '/ambulance';
+  static const hospitals = '/hospitals';
   static const superAdminDashboard = '/super-admin-dashboard';
   static const adminDashboard = '/admin-dashboard';
   static const myBookings = '/my-bookings';
