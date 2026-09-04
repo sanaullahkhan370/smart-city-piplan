@@ -290,17 +290,33 @@ class SuperAdminView
           ],
         ),
         isThreeLine: true,
-        trailing: Switch(
-          value: isActive,
-          activeThumbColor: Colors.green,
-          onChanged: controller.isProcessing.value
-              ? null
-              : (value) => controller.updateAdminStatus(
-                    admin['_id']?.toString() ??
-                        admin['id']?.toString() ??
-                        '',
-                    value,
-                  ),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (controller.supportsVehicle(
+              admin['adminService']?.toString(),
+            ))
+              IconButton(
+                tooltip: 'Assign Vehicle',
+                onPressed: () => _showAssignVehicleDialog(admin),
+                icon: const Icon(
+                  Icons.add_road,
+                  color: Colors.blue,
+                ),
+              ),
+            Switch(
+              value: isActive,
+              activeThumbColor: Colors.green,
+              onChanged: controller.isProcessing.value
+                  ? null
+                  : (value) => controller.updateAdminStatus(
+                        admin['_id']?.toString() ??
+                            admin['id']?.toString() ??
+                            '',
+                        value,
+                      ),
+            ),
+          ],
         ),
       ),
     );
@@ -381,6 +397,125 @@ class SuperAdminView
               ],
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  void _showAssignVehicleDialog(
+    Map<String, dynamic> admin,
+  ) {
+    final service =
+        admin['adminService']?.toString().toLowerCase() ?? 'mazda';
+    final driverName = TextEditingController(
+      text: admin['name']?.toString() ?? '',
+    );
+    final phone = TextEditingController(
+      text: admin['phone']?.toString() ?? '',
+    );
+    final whatsapp = TextEditingController();
+    final driverImage = TextEditingController();
+    final vehicleImage = TextEditingController();
+    final vehicleNumber = TextEditingController();
+    final vehicleType = TextEditingController(
+      text: service == 'mazda' ? 'Loader Mazda' : '',
+    );
+    final address = TextEditingController();
+    final capacity = TextEditingController();
+    final features = TextEditingController();
+
+    Get.dialog(
+      AlertDialog(
+        title: Text('Assign ${service.capitalizeFirst}'),
+        content: SizedBox(
+          width: 520,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _vehicleField(driverName, 'Driver/Admin Name', Icons.person),
+                _vehicleField(phone, 'Phone', Icons.phone),
+                _vehicleField(whatsapp, 'WhatsApp Number', Icons.chat),
+                _vehicleField(vehicleNumber, 'Vehicle Number', Icons.numbers),
+                _vehicleField(vehicleType, 'Vehicle Type', Icons.local_shipping),
+                _vehicleField(driverImage, 'Admin/Driver Picture URL', Icons.person_pin),
+                _vehicleField(vehicleImage, 'Vehicle Picture URL', Icons.image),
+                _vehicleField(address, 'Address', Icons.location_on),
+                _vehicleField(capacity, 'Capacity in KG', Icons.scale),
+                _vehicleField(
+                  features,
+                  'Features (comma separated)',
+                  Icons.list,
+                ),
+              ],
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: Get.back,
+            child: const Text('Cancel'),
+          ),
+          Obx(() => ElevatedButton.icon(
+                onPressed: controller.isProcessing.value
+                    ? null
+                    : () async {
+                        if (driverName.text.trim().isEmpty ||
+                            phone.text.trim().isEmpty ||
+                            vehicleNumber.text.trim().isEmpty ||
+                            vehicleType.text.trim().isEmpty) {
+                          Get.snackbar(
+                            'Required',
+                            'Name, phone, vehicle number and type are required',
+                          );
+                          return;
+                        }
+
+                        final success = await controller.assignVehicle(
+                          ownerId: admin['_id']?.toString() ??
+                              admin['id']?.toString() ??
+                              '',
+                          serviceType: service,
+                          driverName: driverName.text,
+                          phone: phone.text,
+                          whatsappNumber: whatsapp.text,
+                          driverImage: driverImage.text,
+                          vehicleImage: vehicleImage.text,
+                          vehicleNumber: vehicleNumber.text,
+                          vehicleType: vehicleType.text,
+                          address: address.text,
+                          capacityKg:
+                              double.tryParse(capacity.text.trim()) ?? 0,
+                          features: features.text
+                              .split(',')
+                              .map((value) => value.trim())
+                              .where((value) => value.isNotEmpty)
+                              .toList(),
+                        );
+
+                        if (success) Get.back();
+                      },
+                icon: const Icon(Icons.save),
+                label: const Text('Assign Vehicle'),
+              )),
+        ],
+      ),
+    );
+  }
+
+  Widget _vehicleField(
+    TextEditingController fieldController,
+    String label,
+    IconData icon,
+  ) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: TextField(
+        controller: fieldController,
+        decoration: InputDecoration(
+          labelText: label,
+          prefixIcon: Icon(icon),
+          border: const OutlineInputBorder(),
         ),
       ),
     );
