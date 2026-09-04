@@ -67,7 +67,6 @@ class SuperAdminController extends GetxController {
         '$baseUrl/api/ambulance-change-requests',
         headers: {
           'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json',
         },
       );
 
@@ -91,7 +90,6 @@ class SuperAdminController extends GetxController {
         {},
         headers: {
           'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json',
         },
       );
 
@@ -117,7 +115,6 @@ class SuperAdminController extends GetxController {
         {'rejectionReason': reason},
         headers: {
           'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json',
         },
       );
 
@@ -149,7 +146,6 @@ class SuperAdminController extends GetxController {
         '$baseUrl/api/admins',
         headers: {
           'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json',
         },
       );
 
@@ -197,7 +193,6 @@ class SuperAdminController extends GetxController {
         },
         headers: {
           'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json',
         },
       );
 
@@ -234,7 +229,6 @@ class SuperAdminController extends GetxController {
         {'isActive': isActive},
         headers: {
           'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json',
         },
       );
 
