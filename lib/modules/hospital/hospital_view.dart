@@ -175,14 +175,20 @@ class HospitalView extends GetView<HospitalController> {
             )
           else
             ...doctors.map(
-              (doctor) => _doctorCard(Map<String, dynamic>.from(doctor)),
+              (doctor) => _doctorCard(
+                Map<String, dynamic>.from(doctor),
+                facility,
+              ),
             ),
         ],
       ),
     );
   }
 
-  Widget _doctorCard(Map<String, dynamic> doctor) {
+  Widget _doctorCard(
+    Map<String, dynamic> doctor,
+    Map<String, dynamic> facility,
+  ) {
     final qualifications =
         List<dynamic>.from(doctor['qualifications'] ?? []).join(', ');
     final days = List<dynamic>.from(doctor['opdDays'] ?? []).join(', ');
@@ -245,13 +251,10 @@ class HospitalView extends GetView<HospitalController> {
                   children: [
                     ElevatedButton.icon(
                       onPressed: available
-                          ? () => controller.call(
-                              doctor['appointmentNumber']?.toString())
+                          ? () => _showQueueDialog(facility, doctor)
                           : null,
                       icon: const Icon(Icons.confirmation_number, size: 18),
-                      label: Text(
-                        'Get Number ${doctor['appointmentNumber'] ?? ''}',
-                      ),
+                      label: const Text('Get Token / View Queue'),
                     ),
                     if ((doctor['whatsappNumber']?.toString() ?? '').isNotEmpty)
                       OutlinedButton.icon(
@@ -270,6 +273,161 @@ class HospitalView extends GetView<HospitalController> {
         ],
       ),
     );
+  }
+
+
+  void _showQueueDialog(
+    Map<String, dynamic> facility,
+    Map<String, dynamic> doctor,
+  ) {
+    final facilityId = facility['_id']?.toString() ?? '';
+    final doctorId = doctor['_id']?.toString() ?? '';
+    final status = Rxn<Map<String, dynamic>>();
+    final myToken = Rxn<Map<String, dynamic>>();
+    final loading = false.obs;
+
+    Future<void> refresh() async {
+      loading.value = true;
+      status.value = await controller.loadQueueStatus(facilityId, doctorId);
+      loading.value = false;
+    }
+
+    refresh();
+    Get.dialog(
+      AlertDialog(
+        title: Text(doctor['name']?.toString() ?? 'Doctor Queue'),
+        content: SizedBox(
+          width: 430,
+          child: Obx(() {
+            if (loading.value && status.value == null) {
+              return const SizedBox(
+                height: 220,
+                child: Center(child: CircularProgressIndicator()),
+              );
+            }
+            final data = status.value ?? <String, dynamic>{};
+            final tokenData = myToken.value;
+            final appointment = tokenData?['appointment'] is Map
+                ? Map<String, dynamic>.from(tokenData!['appointment'])
+                : <String, dynamic>{};
+            final arrived = data['arrivalStatus'] == 'arrived';
+
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  arrived ? Icons.check_circle : Icons.schedule,
+                  size: 55,
+                  color: arrived ? Colors.green : Colors.orange,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  _arrivalLabel(data['arrivalStatus']),
+                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                const Divider(height: 28),
+                Wrap(
+                  spacing: 24,
+                  runSpacing: 12,
+                  alignment: WrapAlignment.center,
+                  children: [
+                    _queueValue('Current Token', data['currentToken'] ?? 0),
+                    _queueValue('Waiting', data['waitingPatients'] ?? 0),
+                    _queueValue('Fee', 'Rs. ${data['fee'] ?? doctor['fee'] ?? 0}'),
+                    _queueValue(
+                      'Avg. Time',
+                      '${data['averageConsultationMinutes'] ?? 15} min',
+                    ),
+                  ],
+                ),
+                if (appointment.isNotEmpty) ...[
+                  const Divider(height: 28),
+                  Text(
+                    'Your Token: ${appointment['tokenNumber']}',
+                    style: const TextStyle(
+                      color: Colors.blue,
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  Text(
+                    'People ahead: ${tokenData?['peopleAhead'] ?? 0}',
+                  ),
+                  if (tokenData?['estimatedAt'] != null)
+                    Text(
+                      'Estimated: ${_formatTime(tokenData!['estimatedAt'])}',
+                    ),
+                ],
+                const SizedBox(height: 12),
+                const Text(
+                  'Estimated time may change if consultation takes longer.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: Colors.grey, fontSize: 12),
+                ),
+              ],
+            );
+          }),
+        ),
+        actions: [
+          IconButton(
+            tooltip: 'Refresh Queue',
+            onPressed: refresh,
+            icon: const Icon(Icons.refresh),
+          ),
+          TextButton(onPressed: Get.back, child: const Text('Close')),
+          Obx(() => ElevatedButton.icon(
+                onPressed: loading.value
+                    ? null
+                    : () async {
+                        loading.value = true;
+                        final result =
+                            await controller.takeToken(facilityId, doctorId);
+                        if (result != null) myToken.value = result;
+                        status.value =
+                            await controller.loadQueueStatus(facilityId, doctorId);
+                        loading.value = false;
+                      },
+                icon: const Icon(Icons.confirmation_number),
+                label: Text(myToken.value == null ? 'Get Token' : 'Token Saved'),
+              )),
+        ],
+      ),
+    );
+  }
+
+  Widget _queueValue(String label, dynamic value) => SizedBox(
+        width: 105,
+        child: Column(
+          children: [
+            Text(
+              value.toString(),
+              style: const TextStyle(fontSize: 19, fontWeight: FontWeight.bold),
+            ),
+            Text(label, style: const TextStyle(color: Colors.grey, fontSize: 12)),
+          ],
+        ),
+      );
+
+  String _arrivalLabel(dynamic status) {
+    switch (status?.toString()) {
+      case 'arrived':
+        return 'Doctor has arrived';
+      case 'onBreak':
+        return 'Doctor is on break';
+      case 'finished':
+        return 'OPD has finished';
+      default:
+        return 'Doctor has not arrived yet';
+    }
+  }
+
+  String _formatTime(dynamic value) {
+    final date = DateTime.tryParse(value?.toString() ?? '')?.toLocal();
+    if (date == null) return '-';
+    final hour = date.hour == 0 ? 12 : (date.hour > 12 ? date.hour - 12 : date.hour);
+    final minute = date.minute.toString().padLeft(2, '0');
+    final period = date.hour >= 12 ? 'PM' : 'AM';
+    return '$hour:$minute $period';
   }
 
   Widget _image(String url, IconData fallback, double size) {
