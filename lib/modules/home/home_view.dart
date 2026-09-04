@@ -13,28 +13,12 @@ class HomeView extends GetView<HomeController> {
   Widget build(BuildContext context) {
     final services = <_CityService>[
       _CityService(
-        'Ambulance',
-        'Emergency medical transport',
-        'Emergency',
-        Icons.emergency,
-        Colors.red,
-        controller.openAmbulances,
-      ),
-      _CityService(
-        'Hospitals',
-        'Hospitals, clinics and facilities',
+        'Medical Services',
+        'Ambulance, hospitals and doctors',
         'Health',
         Icons.local_hospital,
         const Color(0xFFE53935),
-        controller.openHospitals,
-      ),
-      _CityService(
-        'Doctors',
-        'Find doctors by speciality',
-        'Health',
-        Icons.medical_services,
-        const Color(0xFF00897B),
-        controller.openDoctors,
+        controller.openMedical,
       ),
       _CityService(
         'Rickshaw',
@@ -121,7 +105,7 @@ class HomeView extends GetView<HomeController> {
             TextField(
               onChanged: controller.updateSearch,
               decoration: InputDecoration(
-                hintText: 'Search ambulance, doctor, shop, transport...',
+                hintText: 'Search medical, shop, transport...',
                 prefixIcon: const Icon(Icons.search),
                 filled: true,
                 fillColor: Colors.white,
