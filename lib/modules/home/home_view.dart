@@ -83,15 +83,15 @@ class HomeView extends GetView<HomeController> {
             onPressed: controller.openNotifications,
             icon: const Icon(Icons.notifications_outlined),
           ),
-          PopupMenuButton<String>(
-            onSelected: (value) {
-              if (value == 'bookings') controller.openMyBookings();
-              if (value == 'logout') controller.logout();
-            },
-            itemBuilder: (_) => const [
-              PopupMenuItem(value: 'bookings', child: Text('My Bookings')),
-              PopupMenuItem(value: 'logout', child: Text('Logout')),
-            ],
+          IconButton(
+            tooltip: 'My Bookings',
+            onPressed: controller.openMyBookings,
+            icon: const Icon(Icons.receipt_long_outlined),
+          ),
+          IconButton(
+            tooltip: 'Logout',
+            onPressed: controller.logout,
+            icon: const Icon(Icons.logout),
           ),
         ],
       ),
