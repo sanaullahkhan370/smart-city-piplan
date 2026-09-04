@@ -8,19 +8,7 @@ class MedicalController extends GetxController {
   }
 
   void openHospital() {
-    Get.snackbar(
-      'Hospitals',
-      'Hospital information will be available soon.',
-      snackPosition: SnackPosition.BOTTOM,
-    );
-  }
-
-  void openDoctor() {
-    Get.snackbar(
-      'Doctors',
-      'Doctor information will be available soon.',
-      snackPosition: SnackPosition.BOTTOM,
-    );
+    Get.toNamed(AppRoutes.hospitals);
   }
 
   void openPharmacy() {
