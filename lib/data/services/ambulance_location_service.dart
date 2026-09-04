@@ -110,6 +110,7 @@ class AmbulanceLocationService {
                 (Position position) {
               _handleNewPosition(
                 ambulanceId: ambulanceId,
+                serviceType: serviceType,
                 position: position,
                 onLocationUpdated:
                 onLocationUpdated,
@@ -170,6 +171,7 @@ class AmbulanceLocationService {
 
   Future<void> _sendLocation({
     required String ambulanceId,
+    required String serviceType,
     required Position position,
   }) async {
     if (_isSendingLocation) return;
