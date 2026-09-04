@@ -32,6 +32,15 @@ class AdminController extends GetxController {
 
   final RxString adminName = 'Admin'.obs;
   final RxString adminEmail = ''.obs;
+  final RxString adminService = 'ambulance'.obs;
+
+  bool get isAmbulanceAdmin => adminService.value == 'ambulance';
+
+  String get serviceLabel {
+    final value = adminService.value.trim();
+    if (value.isEmpty) return 'Vehicle';
+    return value[0].toUpperCase() + value.substring(1);
+  }
 
   final Rxn<Map<String, dynamic>> myAmbulance =
   Rxn<Map<String, dynamic>>();
@@ -90,6 +99,15 @@ class AdminController extends GetxController {
 
       adminEmail.value =
           user['email']?.toString() ?? '';
+
+      adminService.value =
+          user['adminService']?.toString().trim().toLowerCase() ??
+              'ambulance';
+
+      if (adminService.value.isEmpty ||
+          adminService.value == 'null') {
+        adminService.value = 'ambulance';
+      }
     } catch (_) {
       adminName.value = 'Admin';
       adminEmail.value = '';
@@ -109,7 +127,9 @@ class AdminController extends GetxController {
 
       final Response<dynamic> response =
       await api.get(
-        '$baseUrl/api/ambulances/my',
+        isAmbulanceAdmin
+            ? '$baseUrl/api/ambulances/my'
+            : '$baseUrl/api/vehicles/my?serviceType=${adminService.value}',
         headers: _authorizedHeaders(token),
       );
 
@@ -563,6 +583,7 @@ class AdminController extends GetxController {
 
     await locationService.startTracking(
       ambulanceId: ambulanceId,
+      serviceType: adminService.value,
       onLocationUpdated: (
           Position position,
           ) {
@@ -694,8 +715,9 @@ class AdminController extends GetxController {
       }
 
       final Uri url = Uri.parse(
-        '$baseUrl/api/ambulances/'
-            '$ambulanceId/availability',
+        isAmbulanceAdmin
+            ? '$baseUrl/api/ambulances/$ambulanceId/availability'
+            : '$baseUrl/api/vehicles/$ambulanceId/availability',
       );
 
       debugPrint(
