@@ -257,6 +257,7 @@ class SuperAdminView
     return Card(
       margin: const EdgeInsets.only(bottom: 10),
       child: ListTile(
+        onTap: () => _showAdminDetails(admin),
         leading: CircleAvatar(
           backgroundColor: isActive
               ? Colors.green.shade100
@@ -266,11 +267,17 @@ class SuperAdminView
             color: isActive ? Colors.green : Colors.red,
           ),
         ),
-        title: Text(
+        title: Row(
+          children: [
+            Expanded(
+              child: Text(
+
           admin['name']?.toString() ?? 'Admin',
-          style: const TextStyle(
-            fontWeight: FontWeight.bold,
-          ),
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+            const Icon(Icons.chevron_right, color: Colors.grey),
+          ],
         ),
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -399,6 +406,436 @@ class SuperAdminView
           ],
         ),
       ),
+    );
+  }
+
+
+  void _showAdminDetails(Map<String, dynamic> selectedAdmin) {
+    final adminId = selectedAdmin['_id']?.toString() ??
+        selectedAdmin['id']?.toString() ?? '';
+    controller.loadAdminDetails(adminId);
+
+    Get.dialog(
+      AlertDialog(
+        titlePadding: const EdgeInsets.fromLTRB(24, 20, 12, 0),
+        title: Row(
+          children: [
+            const Icon(Icons.manage_accounts, color: Colors.blue),
+            const SizedBox(width: 10),
+            const Expanded(child: Text('Administrator Details')),
+            IconButton(onPressed: Get.back, icon: const Icon(Icons.close)),
+          ],
+        ),
+        content: SizedBox(
+          width: 850,
+          height: 620,
+          child: Obx(() {
+            if (controller.isDetailsLoading.value) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            final details = controller.selectedAdminDetails.value;
+            if (details == null) {
+              return Center(
+                child: ElevatedButton.icon(
+                  onPressed: () => controller.loadAdminDetails(adminId),
+                  icon: const Icon(Icons.refresh),
+                  label: const Text('Try Again'),
+                ),
+              );
+            }
+
+            final admin = Map<String, dynamic>.from(details['admin'] ?? {});
+            final summary = Map<String, dynamic>.from(details['summary'] ?? {});
+            final vehicles = List<dynamic>.from(details['vehicles'] ?? []);
+            final ambulances = List<dynamic>.from(details['ambulances'] ?? []);
+            final bookings = List<dynamic>.from(details['recentBookings'] ?? []);
+            final assets = [...vehicles, ...ambulances];
+
+            return ListView(
+              children: [
+                _adminProfile(admin),
+                const SizedBox(height: 16),
+                Wrap(
+                  spacing: 10,
+                  runSpacing: 10,
+                  children: [
+                    _detailStat('Assets', summary['assignedAssets'], Icons.local_shipping, Colors.blue),
+                    _detailStat('Bookings', summary['totalBookings'], Icons.receipt_long, Colors.indigo),
+                    _detailStat('Active', summary['activeBookings'], Icons.notifications_active, Colors.orange),
+                    _detailStat('Completed', summary['completedBookings'], Icons.check_circle, Colors.green),
+                    _detailStat('Trips', summary['totalTrips'], Icons.route, Colors.teal),
+                    _detailStat(
+                      'Rating',
+                      '${summary['rating'] ?? 0} (${summary['ratingCount'] ?? 0})',
+                      Icons.star,
+                      Colors.amber.shade700,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 22),
+                _sectionTitle('Assigned Service / Vehicle', Icons.directions_car),
+                if (assets.isEmpty)
+                  const _EmptyMessage('No vehicle or ambulance assigned')
+                else
+                  ...assets.map((item) => _assetCard(
+                        Map<String, dynamic>.from(item),
+                        isAmbulance: ambulances.contains(item),
+                      )),
+                const SizedBox(height: 22),
+                _sectionTitle('Recent Pickup & Booking Details', Icons.location_on),
+                if (bookings.isEmpty)
+                  const _EmptyMessage('No booking history available')
+                else
+                  ...bookings.map((item) =>
+                      _bookingCard(Map<String, dynamic>.from(item))),
+              ],
+            );
+          }),
+        ),
+        actions: [
+          TextButton.icon(
+            onPressed: () {
+              final details = controller.selectedAdminDetails.value;
+              if (details != null) {
+                _showEditAdminDialog(
+                  Map<String, dynamic>.from(details['admin'] ?? {}),
+                );
+              }
+            },
+            icon: const Icon(Icons.edit),
+            label: const Text('Edit'),
+          ),
+          TextButton.icon(
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            onPressed: () => _confirmDeleteAdmin(adminId),
+            icon: const Icon(Icons.delete_outline),
+            label: const Text('Delete'),
+          ),
+          ElevatedButton(onPressed: Get.back, child: const Text('Close')),
+        ],
+      ),
+      barrierDismissible: false,
+    );
+  }
+
+  Widget _adminProfile(Map<String, dynamic> admin) {
+    final active = admin['isActive'] == true;
+    return Card(
+      color: const Color(0xFFEAF4FF),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: [
+            CircleAvatar(
+              radius: 30,
+              backgroundColor: active ? Colors.green.shade100 : Colors.red.shade100,
+              child: Icon(Icons.person, size: 34, color: active ? Colors.green : Colors.red),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(admin['name']?.toString() ?? 'Admin',
+                      style: const TextStyle(fontSize: 21, fontWeight: FontWeight.bold)),
+                  Text(admin['email']?.toString() ?? ''),
+                  Text(admin['phone']?.toString() ?? 'No phone'),
+                  Text(
+                    '${_pretty(admin['adminService'])} Administrator',
+                    style: const TextStyle(color: Colors.blue, fontWeight: FontWeight.w600),
+                  ),
+                ],
+              ),
+            ),
+            Chip(
+              label: Text(active ? 'Active' : 'Inactive'),
+              backgroundColor: active ? Colors.green.shade100 : Colors.red.shade100,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _detailStat(String title, dynamic value, IconData icon, Color color) {
+    return SizedBox(
+      width: 126,
+      child: Card(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 13),
+          child: Column(
+            children: [
+              Icon(icon, color: color),
+              const SizedBox(height: 5),
+              Text(value?.toString() ?? '0',
+                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              Text(title, style: const TextStyle(color: Colors.grey, fontSize: 12)),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _sectionTitle(String title, IconData icon) => Padding(
+        padding: const EdgeInsets.only(bottom: 8),
+        child: Row(
+          children: [
+            Icon(icon, color: Colors.blue),
+            const SizedBox(width: 8),
+            Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          ],
+        ),
+      );
+
+  Widget _assetCard(Map<String, dynamic> asset, {required bool isAmbulance}) {
+    final image = (isAmbulance ? asset['ambulanceImage'] : asset['vehicleImage'])
+            ?.toString() ?? '';
+    final driverImage = asset['driverImage']?.toString() ?? '';
+    final features = List<dynamic>.from(
+      (isAmbulance ? asset['facilities'] : asset['features']) ?? [],
+    );
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: 10),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _networkPicture(image, Icons.local_shipping),
+            const SizedBox(width: 12),
+            _networkPicture(driverImage, Icons.person, size: 54),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Wrap(
+                spacing: 24,
+                runSpacing: 6,
+                children: [
+                  _info('Driver', asset['driverName']),
+                  _info('Number', asset['vehicleNumber']),
+                  _info('Type', isAmbulance ? asset['ambulanceType'] : asset['vehicleType']),
+                  _info('Phone', asset['phone']),
+                  _info('WhatsApp', asset['whatsappNumber']),
+                  _info('Address', asset['address']),
+                  _info('Status', _pretty(asset['status'])),
+                  _info('Online', asset['isOnline'] == true ? 'Yes' : 'No'),
+                  _info('Verified', asset['isVerified'] == true ? 'Yes' : 'No'),
+                  _info('Rating', '${asset['rating'] ?? 0} (${asset['ratingCount'] ?? 0})'),
+                  _info('Trips', asset['totalTrips']),
+                  if (!isAmbulance) _info('Capacity', '${asset['capacityKg'] ?? 0} KG'),
+                  if (features.isNotEmpty) _info('Features', features.join(', ')),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _bookingCard(Map<String, dynamic> booking) {
+    final user = booking['user'] is Map
+        ? Map<String, dynamic>.from(booking['user'])
+        : <String, dynamic>{};
+    final customer = booking['customerName']?.toString().isNotEmpty == true
+        ? booking['customerName']
+        : booking['patientName'];
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: 8),
+      child: ListTile(
+        leading: CircleAvatar(
+          child: Text((customer?.toString().isNotEmpty == true
+                  ? customer.toString()[0]
+                  : 'U').toUpperCase()),
+        ),
+        title: Text(customer?.toString().isNotEmpty == true
+            ? customer.toString()
+            : user['name']?.toString() ?? 'Customer'),
+        subtitle: Text(
+          'Phone: ${booking['phone'] ?? user['phone'] ?? '-'}\n'
+          'Pickup: ${booking['pickupAddress'] ?? '-'}'
+          '${(booking['notes']?.toString() ?? '').isNotEmpty ? '\nNotes: ${booking['notes']}' : ''}',
+        ),
+        isThreeLine: true,
+        trailing: Chip(
+          label: Text(_pretty(booking['status'])),
+          backgroundColor: _statusColor(booking['status']).withValues(alpha: .14),
+          labelStyle: TextStyle(color: _statusColor(booking['status'])),
+        ),
+      ),
+    );
+  }
+
+  Widget _networkPicture(String url, IconData fallback, {double size = 72}) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(10),
+      child: url.isEmpty
+          ? Container(
+              width: size, height: size, color: Colors.grey.shade200,
+              child: Icon(fallback, color: Colors.grey),
+            )
+          : Image.network(
+              url, width: size, height: size, fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) => Container(
+                width: size, height: size, color: Colors.grey.shade200,
+                child: Icon(fallback, color: Colors.grey),
+              ),
+            ),
+    );
+  }
+
+  Widget _info(String label, dynamic value) => SizedBox(
+        width: 180,
+        child: Text.rich(
+          TextSpan(
+            text: '$label: ',
+            style: const TextStyle(fontWeight: FontWeight.bold),
+            children: [
+              TextSpan(
+                text: value?.toString().isNotEmpty == true ? value.toString() : '-',
+                style: const TextStyle(fontWeight: FontWeight.normal),
+              ),
+            ],
+          ),
+        ),
+      );
+
+  String _pretty(dynamic value) {
+    final text = value?.toString().replaceAll('_', ' ') ?? 'General';
+    if (text.isEmpty) return 'General';
+    return text[0].toUpperCase() + text.substring(1);
+  }
+
+  Color _statusColor(dynamic status) {
+    switch (status?.toString()) {
+      case 'completed':
+      case 'available':
+        return Colors.green;
+      case 'pending':
+        return Colors.orange;
+      case 'accepted':
+      case 'booked':
+        return Colors.blue;
+      case 'rejected':
+      case 'cancelled':
+        return Colors.red;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  void _showEditAdminDialog(Map<String, dynamic> admin) {
+    final id = admin['_id']?.toString() ?? admin['id']?.toString() ?? '';
+    final name = TextEditingController(text: admin['name']?.toString() ?? '');
+    final email = TextEditingController(text: admin['email']?.toString() ?? '');
+    final phone = TextEditingController(text: admin['phone']?.toString() ?? '');
+    final password = TextEditingController();
+    final service = (admin['adminService']?.toString() ??
+        controller.adminServices.first).obs;
+    final active = (admin['isActive'] == true).obs;
+    final hidePassword = true.obs;
+
+    Get.dialog(
+      AlertDialog(
+        title: const Text('Edit Administrator'),
+        content: SizedBox(
+          width: 460,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _vehicleField(name, 'Admin Name', Icons.person),
+                _vehicleField(email, 'Email', Icons.email),
+                _vehicleField(phone, 'Phone', Icons.phone),
+                Obx(() => DropdownButtonFormField<String>(
+                      value: service.value,
+                      decoration: const InputDecoration(
+                        labelText: 'Admin Service',
+                        prefixIcon: Icon(Icons.business_center),
+                        border: OutlineInputBorder(),
+                      ),
+                      items: controller.adminServices
+                          .map((item) => DropdownMenuItem(
+                                value: item, child: Text(_pretty(item))))
+                          .toList(),
+                      onChanged: (value) {
+                        if (value != null) service.value = value;
+                      },
+                    )),
+                const SizedBox(height: 12),
+                Obx(() => TextField(
+                      controller: password,
+                      obscureText: hidePassword.value,
+                      decoration: InputDecoration(
+                        labelText: 'New Password (optional)',
+                        prefixIcon: const Icon(Icons.lock),
+                        border: const OutlineInputBorder(),
+                        suffixIcon: IconButton(
+                          onPressed: hidePassword.toggle,
+                          icon: Icon(hidePassword.value
+                              ? Icons.visibility : Icons.visibility_off),
+                        ),
+                      ),
+                    )),
+                Obx(() => SwitchListTile(
+                      title: const Text('Admin Active'),
+                      value: active.value,
+                      onChanged: (value) => active.value = value,
+                    )),
+              ],
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: Get.back, child: const Text('Cancel')),
+          Obx(() => ElevatedButton.icon(
+                onPressed: controller.isProcessing.value
+                    ? null
+                    : () async {
+                        if (name.text.trim().isEmpty ||
+                            email.text.trim().isEmpty ||
+                            phone.text.trim().isEmpty ||
+                            (password.text.isNotEmpty && password.text.length < 8)) {
+                          Get.snackbar('Required', 'Complete all fields; new password must be 8+ characters');
+                          return;
+                        }
+                        final saved = await controller.updateAdmin(
+                          adminId: id,
+                          name: name.text,
+                          email: email.text,
+                          phone: phone.text,
+                          adminService: service.value,
+                          isActive: active.value,
+                          password: password.text,
+                        );
+                        if (saved) Get.back();
+                      },
+                icon: const Icon(Icons.save),
+                label: const Text('Save Changes'),
+              )),
+        ],
+      ),
+    );
+  }
+
+  void _confirmDeleteAdmin(String adminId) {
+    Get.defaultDialog(
+      title: 'Delete Administrator?',
+      middleText:
+          'Only an admin with no assigned service and no booking history can be deleted. Otherwise deactivate it to keep records safe.',
+      textCancel: 'Cancel',
+      textConfirm: 'Delete',
+      confirmTextColor: Colors.white,
+      buttonColor: Colors.red,
+      onConfirm: () async {
+        final deleted = await controller.deleteAdmin(adminId);
+        if (deleted) {
+          Get.back();
+          Get.back();
+        }
+      },
     );
   }
 
@@ -673,4 +1110,21 @@ class SuperAdminView
       ),
     );
   }
+}
+
+class _EmptyMessage extends StatelessWidget {
+  final String text;
+  const _EmptyMessage(this.text);
+
+  @override
+  Widget build(BuildContext context) => Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: Colors.grey.shade100,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Text(text, textAlign: TextAlign.center,
+            style: const TextStyle(color: Colors.grey)),
+      );
 }
