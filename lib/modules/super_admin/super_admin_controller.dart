@@ -19,6 +19,17 @@ class SuperAdminController extends GetxController {
 
   static const String baseUrl = 'http://localhost:5000';
 
+  final List<String> adminServices = const [
+    'ambulance',
+    'rickshaw',
+    'mazda',
+    'pickup',
+    'hospital',
+    'doctor',
+    'shop',
+    'transport',
+  ];
+
   int get totalAdmins => admins.length;
 
   int get pendingRequestsCount =>
@@ -164,11 +175,87 @@ class SuperAdminController extends GetxController {
     }
   }
 
-  void openCreateAdmin() {
-    Get.snackbar(
-      'Create Admin',
-      'اب اگلے مرحلے میں Create Admin screen بنائیں گے',
-    );
+  Future<bool> createAdmin({
+    required String name,
+    required String email,
+    required String phone,
+    required String password,
+    required String adminService,
+  }) async {
+    try {
+      isProcessing.value = true;
+      final token = storage.readToken();
+
+      final response = await api.post(
+        '$baseUrl/api/admins',
+        {
+          'name': name.trim(),
+          'email': email.trim(),
+          'phone': phone.trim(),
+          'password': password,
+          'adminService': adminService,
+        },
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+
+      if (response.statusCode == 201 &&
+          response.body['success'] == true) {
+        Get.snackbar('Success', 'Admin created successfully');
+        await loadAdmins();
+        return true;
+      }
+
+      Get.snackbar(
+        'Error',
+        response.body?['message'] ?? 'Admin could not be created',
+      );
+      return false;
+    } catch (error) {
+      Get.snackbar('Error', error.toString());
+      return false;
+    } finally {
+      isProcessing.value = false;
+    }
+  }
+
+  Future<void> updateAdminStatus(
+    String adminId,
+    bool isActive,
+  ) async {
+    try {
+      isProcessing.value = true;
+      final token = storage.readToken();
+
+      final response = await api.patch(
+        '$baseUrl/api/admins/$adminId/status',
+        {'isActive': isActive},
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+
+      if (response.statusCode == 200 &&
+          response.body['success'] == true) {
+        await loadAdmins();
+        Get.snackbar(
+          'Success',
+          isActive ? 'Admin activated' : 'Admin deactivated',
+        );
+      } else {
+        Get.snackbar(
+          'Error',
+          response.body?['message'] ?? 'Status could not be updated',
+        );
+      }
+    } catch (error) {
+      Get.snackbar('Error', error.toString());
+    } finally {
+      isProcessing.value = false;
+    }
   }
 
   Future<void> logout() async {
