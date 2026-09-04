@@ -31,7 +31,7 @@ class SuperAdminView
       ),
 
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: controller.openCreateAdmin,
+        onPressed: _showCreateAdminDialog,
         backgroundColor: Colors.red,
         foregroundColor: Colors.white,
         icon: const Icon(Icons.person_add),
@@ -272,29 +272,35 @@ class SuperAdminView
             fontWeight: FontWeight.bold,
           ),
         ),
-        subtitle: Text(
-          admin['email']?.toString() ?? '',
-        ),
-        trailing: Container(
-          padding: const EdgeInsets.symmetric(
-            horizontal: 10,
-            vertical: 5,
-          ),
-          decoration: BoxDecoration(
-            color: isActive
-                ? Colors.green.shade50
-                : Colors.red.shade50,
-            borderRadius: BorderRadius.circular(15),
-          ),
-          child: Text(
-            isActive ? 'Active' : 'Inactive',
-            style: TextStyle(
-              color: isActive
-                  ? Colors.green
-                  : Colors.red,
-              fontWeight: FontWeight.bold,
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(admin['email']?.toString() ?? ''),
+            if ((admin['phone']?.toString() ?? '').isNotEmpty)
+              Text(admin['phone'].toString()),
+            Text(
+              (admin['adminService']?.toString() ?? 'general')
+                  .replaceAll('_', ' ')
+                  .capitalizeFirst ?? 'General',
+              style: const TextStyle(
+                color: Colors.blue,
+                fontWeight: FontWeight.w600,
+              ),
             ),
-          ),
+          ],
+        ),
+        isThreeLine: true,
+        trailing: Switch(
+          value: isActive,
+          activeThumbColor: Colors.green,
+          onChanged: controller.isProcessing.value
+              ? null
+              : (value) => controller.updateAdminStatus(
+                    admin['_id']?.toString() ??
+                        admin['id']?.toString() ??
+                        '',
+                    value,
+                  ),
         ),
       ),
     );
@@ -376,6 +382,132 @@ class SuperAdminView
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  void _showCreateAdminDialog() {
+    final nameController = TextEditingController();
+    final emailController = TextEditingController();
+    final phoneController = TextEditingController();
+    final passwordController = TextEditingController();
+    final selectedService = controller.adminServices.first.obs;
+    final obscurePassword = true.obs;
+
+    Get.dialog(
+      AlertDialog(
+        title: const Text('Create Service Admin'),
+        content: SizedBox(
+          width: 430,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: nameController,
+                  decoration: const InputDecoration(
+                    labelText: 'Admin Name',
+                    prefixIcon: Icon(Icons.person_outline),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: emailController,
+                  keyboardType: TextInputType.emailAddress,
+                  decoration: const InputDecoration(
+                    labelText: 'Email',
+                    prefixIcon: Icon(Icons.email_outlined),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: phoneController,
+                  keyboardType: TextInputType.phone,
+                  decoration: const InputDecoration(
+                    labelText: 'Phone',
+                    prefixIcon: Icon(Icons.phone_outlined),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Obx(() => DropdownButtonFormField<String>(
+                      value: selectedService.value,
+                      decoration: const InputDecoration(
+                        labelText: 'Admin Service',
+                        prefixIcon: Icon(Icons.business_center_outlined),
+                      ),
+                      items: controller.adminServices
+                          .map((service) => DropdownMenuItem(
+                                value: service,
+                                child: Text(
+                                  service.capitalizeFirst ?? service,
+                                                             ),
+                              ))
+                          .toList(),
+                      onChanged: (value) {
+                        if (value != null) selectedService.value = value;
+                      },
+                    )),
+                const SizedBox(height: 12),
+                Obx(() => TextField(
+                      controller: passwordController,
+                      obscureText: obscurePassword.value,
+                      decoration: InputDecoration(
+                        labelText: 'Password (minimum 8 characters)',
+                        prefixIcon: const Icon(Icons.lock_outline),
+                        suffixIcon: IconButton(
+                          onPressed: () => obscurePassword.toggle(),
+                          icon: Icon(
+                            obscurePassword.value
+                                ? Icons.visibility_outlined
+                                : Icons.visibility_off_outlined,
+                          ),
+                        ),
+                      ),
+                    )),
+              ],
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(),
+            child: const Text('Cancel'),
+          ),
+          Obx(() => ElevatedButton.icon(
+                onPressed: controller.isProcessing.value
+                    ? null
+                    : () async {
+                        if (nameController.text.trim().isEmpty ||
+                            emailController.text.trim().isEmpty ||
+                            phoneController.text.trim().isEmpty ||
+                            passwordController.text.length < 8) {
+                          Get.snackbar(
+                            'Required',
+                            'Complete all fields; password must be at least 8 characters',
+                          );
+                          return;
+                        }
+
+                        final created = await controller.createAdmin(
+                          name: nameController.text,
+                          email: emailController.text,
+                          phone: phoneController.text,
+                          password: passwordController.text,
+                          adminService: selectedService.value,
+                        );
+
+                        if (created) Get.back();
+                      },
+                icon: controller.isProcessing.value
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.person_add),
+                label: const Text('Create Admin'),
+              )),
+        ],
       ),
     );
   }
