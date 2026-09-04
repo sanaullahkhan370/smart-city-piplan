@@ -15,6 +15,8 @@ import '../../modules/super_admin/super_admin_binding.dart';
 import '../../modules/super_admin/super_admin_view.dart';
 import '../../modules/admin/admin_binding.dart';
 import '../../modules/admin/admin_view.dart';
+import '../../modules/doctor_queue_admin/doctor_queue_admin_binding.dart';
+import '../../modules/doctor_queue_admin/doctor_queue_admin_view.dart';
 import '../../modules/booking/my_bookings_binding.dart';
 import '../../modules/booking/my_bookings_view.dart';
 import '../../data/services/booking_service.dart';
@@ -63,6 +65,11 @@ class AppPages {
       name: AppRoutes.superAdminDashboard,
       page: () => const SuperAdminView(),
       binding: SuperAdminBinding(),
+    ),
+    GetPage(
+      name: AppRoutes.doctorQueueAdmin,
+      page: () => const DoctorQueueAdminView(),
+      binding: DoctorQueueAdminBinding(),
     ),
     GetPage(
       name: AppRoutes.adminDashboard,
