@@ -13,6 +13,9 @@ class SuperAdminController extends GetxController {
   final RxList<Map<String, dynamic>> changeRequests =
       <Map<String, dynamic>>[].obs;
 
+  final RxList<Map<String, dynamic>> medicalFacilities =
+      <Map<String, dynamic>>[].obs;
+
   final RxBool isLoading = false.obs;
   final RxBool isDetailsLoading = false.obs;
   final Rxn<Map<String, dynamic>> selectedAdminDetails =
@@ -58,7 +61,23 @@ class SuperAdminController extends GetxController {
 
   Future<void> refreshData() async {
     await loadAdmins();
+    await loadMedicalFacilities();
     await loadChangeRequests();
+  }
+
+
+  Future<void> loadMedicalFacilities() async {
+    try {
+      final response = await api.get('$baseUrl/api/medical-facilities');
+      if (response.statusCode == 200 && response.body['success'] == true) {
+        final data = List<dynamic>.from(response.body['data'] ?? []);
+        medicalFacilities.assignAll(
+          data.map((item) => Map<String, dynamic>.from(item)),
+        );
+      }
+    } catch (_) {
+      medicalFacilities.clear();
+    }
   }
 
   Future<void> loadChangeRequests() async {
@@ -180,6 +199,8 @@ class SuperAdminController extends GetxController {
     required String phone,
     required String password,
     required String adminService,
+    String? facilityId,
+    Map<String, dynamic>? doctorProfile,
   }) async {
     try {
       isProcessing.value = true;
@@ -193,6 +214,8 @@ class SuperAdminController extends GetxController {
           'phone': phone.trim(),
           'password': password,
           'adminService': adminService,
+          if (facilityId != null) 'facilityId': facilityId,
+          if (doctorProfile != null) 'doctorProfile': doctorProfile,
         },
         headers: {
           'Authorization': 'Bearer $token',
