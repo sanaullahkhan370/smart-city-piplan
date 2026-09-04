@@ -32,16 +32,10 @@ class MedicalView extends GetView<MedicalController> {
               onTap: controller.openAmbulance,
             ),
             _buildMedicalCard(
-              title: 'Hospitals',
+              title: 'Hospitals & Clinics',
               icon: Icons.local_hospital_outlined,
               color: Colors.blue,
               onTap: controller.openHospital,
-            ),
-            _buildMedicalCard(
-              title: 'Doctors',
-              icon: Icons.medical_services_outlined,
-              color: Colors.green,
-              onTap: controller.openDoctor,
             ),
             _buildMedicalCard(
               title: 'Pharmacy',
