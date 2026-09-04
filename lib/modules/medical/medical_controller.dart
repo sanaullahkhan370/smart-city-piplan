@@ -4,13 +4,7 @@ import '../../app/routes/app_routes.dart';
 
 class MedicalController extends GetxController {
   void openAmbulance() {
-    Get.toNamed(
-      AppRoutes.vehicles,
-      arguments: {
-        'serviceType': 'ambulance',
-        'title': 'Ambulances',
-      },
-    );
+    Get.toNamed(AppRoutes.ambulance);
   }
 
   void openHospital() {
