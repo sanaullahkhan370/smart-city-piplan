@@ -28,6 +28,7 @@ class AmbulanceLocationService {
 
   Future<void> startTracking({
     required String ambulanceId,
+    String serviceType = 'ambulance',
     required void Function(Position position)
     onLocationUpdated,
     required void Function(String message)
@@ -91,6 +92,7 @@ class AmbulanceLocationService {
 
       await _sendLocation(
         ambulanceId: ambulanceId,
+        serviceType: serviceType,
         position: currentPosition,
       );
 
@@ -137,6 +139,7 @@ class AmbulanceLocationService {
 
   Future<void> _handleNewPosition({
     required String ambulanceId,
+    required String serviceType,
     required Position position,
     required void Function(Position position)
     onLocationUpdated,
@@ -146,6 +149,7 @@ class AmbulanceLocationService {
     try {
       await _sendLocation(
         ambulanceId: ambulanceId,
+        serviceType: serviceType,
         position: position,
       );
 
@@ -185,8 +189,9 @@ class AmbulanceLocationService {
       final http.Response response =
       await http.patch(
         Uri.parse(
-          '$baseUrl/ambulances/'
-              '$ambulanceId/location',
+          serviceType == 'ambulance'
+              ? '$baseUrl/ambulances/$ambulanceId/location'
+              : '$baseUrl/vehicles/$ambulanceId/location',
         ),
         headers: {
           'Authorization':
