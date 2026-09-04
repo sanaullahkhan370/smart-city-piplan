@@ -1,546 +1,343 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
-import '../../core/constants/app_strings.dart';
 import 'home_controller.dart';
 
 class HomeView extends GetView<HomeController> {
   const HomeView({super.key});
 
+  static const Color primary = Color(0xFF1256A0);
+  static const Color background = Color(0xFFF5F7FB);
+
   @override
   Widget build(BuildContext context) {
-    final double screenWidth =
-        MediaQuery.sizeOf(context).width;
-
-    final int gridColumns =
-    screenWidth >= 900 ? 4 : 2;
+    final services = <_CityService>[
+      _CityService(
+        'Ambulance',
+        'Emergency medical transport',
+        'Emergency',
+        Icons.emergency,
+        Colors.red,
+        controller.openAmbulances,
+      ),
+      _CityService(
+        'Hospitals',
+        'Hospitals, clinics and facilities',
+        'Health',
+        Icons.local_hospital,
+        const Color(0xFFE53935),
+        controller.openHospitals,
+      ),
+      _CityService(
+        'Doctors',
+        'Find doctors by speciality',
+        'Health',
+        Icons.medical_services,
+        const Color(0xFF00897B),
+        controller.openDoctors,
+      ),
+      _CityService(
+        'Rickshaw',
+        'Local passenger and loading service',
+        'Local Transport',
+        Icons.electric_rickshaw,
+        const Color(0xFFF57C00),
+        controller.openRickshaws,
+      ),
+      _CityService(
+        'Mazda',
+        'Medium cargo transport',
+        'Local Transport',
+        Icons.local_shipping,
+        const Color(0xFF1976D2),
+        controller.openMazda,
+      ),
+      _CityService(
+        'Pickup',
+        'Pickup and delivery service',
+        'Local Transport',
+        Icons.fire_truck,
+        const Color(0xFF00838F),
+        controller.openPickups,
+      ),
+      _CityService(
+        'Intercity Transport',
+        'Lahore, Mianwali, Karachi and more',
+        'Travel',
+        Icons.directions_bus,
+        const Color(0xFF5E35B1),
+        controller.openIntercityTransport,
+      ),
+      _CityService(
+        'Shops & Market',
+        'Browse local shops and products',
+        'Shopping',
+        Icons.storefront,
+        const Color(0xFF7CB342),
+        controller.openShops,
+      ),
+    ];
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F7FB),
-
+      backgroundColor: background,
       appBar: AppBar(
-        backgroundColor: Colors.blue,
+        backgroundColor: primary,
         foregroundColor: Colors.white,
         elevation: 0,
-        centerTitle: true,
-        title: const Text(
-          AppStrings.home,
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-          ),
+        title: const Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Piplan Smart City',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
+            Text('Everything you need in one place',
+                style: TextStyle(fontSize: 11, fontWeight: FontWeight.w400)),
+          ],
         ),
         actions: [
           IconButton(
             tooltip: 'Notifications',
-            onPressed: () {
-              controller.showComingSoon(
-                'Notifications',
-              );
-            },
-            icon: const Icon(
-              Icons.notifications_outlined,
-            ),
+            onPressed: controller.openNotifications,
+            icon: const Icon(Icons.notifications_outlined),
           ),
-
-          // بڑی screen پر My Bookings
-          // icon کے ساتھ نام بھی دکھے گا
-          if (screenWidth >= 600)
-            Padding(
-              padding: const EdgeInsets.symmetric(
-                vertical: 7,
-              ),
-              child: TextButton.icon(
-                onPressed:
-                controller.openMyBookings,
-                style: TextButton.styleFrom(
-                  foregroundColor: Colors.white,
-                  backgroundColor:
-                  Colors.white.withAlpha(30),
-                  padding:
-                  const EdgeInsets.symmetric(
-                    horizontal: 14,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius:
-                    BorderRadius.circular(10),
-                  ),
-                ),
-                icon: const Icon(
-                  Icons.receipt_long,
-                ),
-                label: const Text(
-                  'My Bookings',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            )
-          else
-            IconButton(
-              onPressed:
-              controller.openMyBookings,
-              tooltip: 'My Bookings',
-              icon: const Icon(
-                Icons.receipt_long,
-              ),
-            ),
-
-          IconButton(
-            tooltip: 'Logout',
-            onPressed: controller.logout,
-            icon: const Icon(Icons.logout),
+          PopupMenuButton<String>(
+            onSelected: (value) {
+              if (value == 'bookings') controller.openMyBookings();
+              if (value == 'logout') controller.logout();
+            },
+            itemBuilder: (_) => const [
+              PopupMenuItem(value: 'bookings', child: Text('My Bookings')),
+              PopupMenuItem(value: 'logout', child: Text('Logout')),
+            ],
           ),
         ],
       ),
-
-      body: SafeArea(
-        child: RefreshIndicator(
-          onRefresh:
-          controller.checkRequiredRating,
-          child: SingleChildScrollView(
-            physics:
-            const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment:
-              CrossAxisAlignment.start,
-              children: [
-                _buildWelcomeCard(),
-
-                const SizedBox(height: 24),
-
-                // =========================
-                // VEHICLE BOOKING SECTION
-                // =========================
-
-                _buildSectionTitle(
-                  icon: Icons.directions_car,
-                  title: 'Book a Vehicle',
-                  color: Colors.blue,
+      body: RefreshIndicator(
+        onRefresh: controller.checkRequiredRating,
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 28),
+          children: [
+            _welcomeCard(),
+            const SizedBox(height: 18),
+            TextField(
+              onChanged: controller.updateSearch,
+              decoration: InputDecoration(
+                hintText: 'Search ambulance, doctor, shop, transport...',
+                prefixIcon: const Icon(Icons.search),
+                filled: true,
+                fillColor: Colors.white,
+                contentPadding: const EdgeInsets.symmetric(vertical: 14),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide.none,
                 ),
-
-                const SizedBox(height: 6),
-
-                Text(
-                  'Select the service you need',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey.shade600,
-                  ),
-                ),
-
-                const SizedBox(height: 14),
-
-                GridView.count(
-                  crossAxisCount: gridColumns,
-                  shrinkWrap: true,
-                  physics:
-                  const NeverScrollableScrollPhysics(),
-                  crossAxisSpacing: 12,
-                  mainAxisSpacing: 12,
-                  childAspectRatio:
-                  screenWidth >= 900
-                      ? 1.35
-                      : 1.20,
-                  children: [
-                    // Ambulance
-                    _buildVehicleCard(
-                      title: 'Ambulance',
-                      subtitle:
-                      'Emergency medical transport',
-                      icon:
-                      Icons.emergency_outlined,
-                      color: Colors.red,
-                      onTap:
-                      controller.openAmbulances,
-                    ),
-
-                    // Rickshaw
-                    _buildVehicleCard(
-                      title: 'Rickshaw',
-                      subtitle:
-                      'Local loading and delivery',
-                      icon:
-                      Icons.electric_rickshaw,
-                      color: Colors.orange.shade800,
-                      onTap:
-                      controller.openRickshaws,
-                    ),
-
-                    // Mazda
-                    _buildVehicleCard(
-                      title: 'Mazda',
-                      subtitle:
-                      'Medium cargo transport',
-                      icon:
-                      Icons.local_shipping_outlined,
-                      color: Colors.blue.shade700,
-                      onTap: controller.openMazda,
-                    ),
-
-                    // Pickup
-                    _buildVehicleCard(
-                      title: 'Pickup',
-                      subtitle:
-                      'Pickup and delivery service',
-                      icon:
-                      Icons.fire_truck_outlined,
-                      color: Colors.teal,
-                      onTap:
-                      controller.openPickups,
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: 28),
-
-                // =========================
-                // SMART CITY SERVICES
-                // =========================
-
-                _buildSectionTitle(
-                  icon: Icons.location_city,
-                  title: 'Smart City Services',
-                  color: Colors.indigo,
-                ),
-
-                const SizedBox(height: 14),
-
-                GridView.count(
-                  crossAxisCount: gridColumns,
-                  shrinkWrap: true,
-                  physics:
-                  const NeverScrollableScrollPhysics(),
-                  crossAxisSpacing: 12,
-                  mainAxisSpacing: 12,
-                  childAspectRatio:
-                  screenWidth >= 900
-                      ? 1.35
-                      : 1.25,
-                  children: [
-                    _buildFeatureCard(
-                      title: 'Medical',
-                      icon: Icons
-                          .local_hospital_outlined,
-                      color: Colors.red,
-                      onTap:
-                      controller.openMedical,
-                    ),
-
-                    _buildFeatureCard(
-                      title: 'Complaints',
-                      icon: Icons
-                          .report_problem_outlined,
-                      color: Colors.deepOrange,
-                      onTap:
-                      controller.openComplaints,
-                    ),
-
-                    _buildFeatureCard(
-                      title: 'Bills',
-                      icon:
-                      Icons.receipt_long_outlined,
-                      color: Colors.orange,
-                      onTap: controller.openBills,
-                    ),
-
-                    _buildFeatureCard(
-                      title: 'City Services',
-                      icon: Icons
-                          .miscellaneous_services_outlined,
-                      color: Colors.blue,
-                      onTap:
-                      controller.openServices,
-                    ),
-
-                    _buildFeatureCard(
-                      title: 'Announcements',
-                      icon:
-                      Icons.campaign_outlined,
-                      color: Colors.purple,
-                      onTap: controller
-                          .openAnnouncements,
-                    ),
-
-                    _buildFeatureCard(
-                      title: 'Emergency',
-                      icon:
-                      Icons.emergency_outlined,
-                      color: Colors.green,
-                      onTap:
-                      controller.openEmergency,
-                    ),
-
-                    _buildFeatureCard(
-                      title: 'Property',
-                      icon:
-                      Icons.home_work_outlined,
-                      color: Colors.teal,
-                      onTap:
-                      controller.openProperty,
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: 28),
-
-                // =========================
-                // ANNOUNCEMENT
-                // =========================
-
-                _buildSectionTitle(
-                  icon: Icons.campaign_outlined,
-                  title: 'Latest Announcement',
-                  color: Colors.purple,
-                ),
-
-                const SizedBox(height: 12),
-
-                _buildAnnouncementCard(),
-
-                const SizedBox(height: 20),
-              ],
+              ),
             ),
-          ),
+            const SizedBox(height: 14),
+            SizedBox(
+              height: 42,
+              child: Obx(
+                () => ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: controller.categories.length,
+                  separatorBuilder: (_, __) => const SizedBox(width: 8),
+                  itemBuilder: (_, index) {
+                    final category = controller.categories[index];
+                    final selected =
+                        controller.selectedCategory.value == category;
+                    return ChoiceChip(
+                      label: Text(category),
+                      selected: selected,
+                      onSelected: (_) => controller.selectCategory(category),
+                      selectedColor: primary,
+                      labelStyle: TextStyle(
+                        color: selected ? Colors.white : Colors.black87,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      backgroundColor: Colors.white,
+                      side: BorderSide.none,
+                    );
+                  },
+                ),
+              ),
+            ),
+            const SizedBox(height: 22),
+            const Text(
+              'City Services',
+              style: TextStyle(fontSize: 21, fontWeight: FontWeight.w800),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Choose a service to view available providers',
+              style: TextStyle(color: Colors.grey.shade600),
+            ),
+            const SizedBox(height: 14),
+            Obx(() {
+              final query = controller.searchQuery.value;
+              final category = controller.selectedCategory.value;
+              final filtered = services.where((service) {
+                final matchesCategory =
+                    category == 'All' || service.category == category;
+                final text =
+                    '${service.title} ${service.subtitle} ${service.category}'
+                        .toLowerCase();
+                return matchesCategory && text.contains(query);
+              }).toList();
+
+              if (filtered.isEmpty) {
+                return const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 50),
+                  child: Center(child: Text('No matching service found')),
+                );
+              }
+
+              return LayoutBuilder(
+                builder: (context, constraints) {
+                  final columns = constraints.maxWidth >= 900
+                      ? 4
+                      : constraints.maxWidth >= 600
+                          ? 3
+                          : 2;
+                  return GridView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: filtered.length,
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: columns,
+                      crossAxisSpacing: 12,
+                      mainAxisSpacing: 12,
+                      childAspectRatio: columns == 2 ? 0.94 : 1.05,
+                    ),
+                    itemBuilder: (_, index) => _serviceCard(filtered[index]),
+                  );
+                },
+              );
+            }),
+            const SizedBox(height: 22),
+            _travelBanner(),
+          ],
         ),
       ),
-
       bottomNavigationBar: Obx(
-            () => BottomNavigationBar(
-          currentIndex:
-          controller.selectedIndex.value,
-          onTap:
-          controller.changeBottomPage,
-          selectedItemColor: Colors.blue,
-          unselectedItemColor: Colors.grey,
-          type: BottomNavigationBarType.fixed,
-          items: const [
-            BottomNavigationBarItem(
-              icon:
-              Icon(Icons.home_outlined),
-              activeIcon: Icon(Icons.home),
-              label: 'Home',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(
-                Icons.notifications_outlined,
-              ),
-              activeIcon:
-              Icon(Icons.notifications),
-              label: 'Notifications',
-            ),
-            BottomNavigationBarItem(
-              icon:
-              Icon(Icons.person_outline),
-              activeIcon: Icon(Icons.person),
-              label: 'Profile',
-            ),
+        () => NavigationBar(
+          selectedIndex: controller.selectedIndex.value,
+          onDestinationSelected: controller.changeBottomPage,
+          destinations: const [
+            NavigationDestination(
+                icon: Icon(Icons.home_outlined),
+                selectedIcon: Icon(Icons.home),
+                label: 'Home'),
+            NavigationDestination(
+                icon: Icon(Icons.notifications_outlined),
+                label: 'Alerts'),
+            NavigationDestination(
+                icon: Icon(Icons.receipt_long_outlined),
+                label: 'Bookings'),
+            NavigationDestination(
+                icon: Icon(Icons.person_outline), label: 'Profile'),
           ],
         ),
       ),
     );
   }
 
-  // ==================================
-  // SECTION TITLE
-  // ==================================
-
-  Widget _buildSectionTitle({
-    required IconData icon,
-    required String title,
-    required Color color,
-  }) {
-    return Row(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(7),
-          decoration: BoxDecoration(
-            color: color.withAlpha(25),
-            borderRadius:
-            BorderRadius.circular(9),
-          ),
-          child: Icon(
-            icon,
-            color: color,
-            size: 22,
-          ),
-        ),
-
-        const SizedBox(width: 10),
-
-        Expanded(
-          child: Text(
-            title,
-            style: const TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  // ==================================
-  // WELCOME CARD
-  // ==================================
-
-  Widget _buildWelcomeCard() {
+  Widget _welcomeCard() {
     return Container(
-      width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: [
-            Color(0xFF1976D2),
-            Color(0xFF42A5F5),
-          ],
+          colors: [Color(0xFF1256A0), Color(0xFF2589D8)],
         ),
-        borderRadius:
-        BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(22),
         boxShadow: [
           BoxShadow(
-            color: Colors.blue.withAlpha(64),
-            blurRadius: 12,
-            offset: const Offset(0, 6),
+            color: primary.withAlpha(55),
+            blurRadius: 18,
+            offset: const Offset(0, 8),
           ),
         ],
       ),
       child: Row(
         children: [
-          Container(
-            padding: const EdgeInsets.all(14),
-            decoration:
-            const BoxDecoration(
-              color: Colors.white,
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(
-              Icons.location_city,
-              size: 40,
-              color: Colors.blue,
-            ),
+          const CircleAvatar(
+            radius: 28,
+            backgroundColor: Colors.white,
+            child: Icon(Icons.location_city, color: primary, size: 32),
           ),
-
-          const SizedBox(width: 16),
-
+          const SizedBox(width: 15),
           Expanded(
             child: Column(
-              crossAxisAlignment:
-              CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                const Text('Assalam-o-Alaikum',
+                    style: TextStyle(color: Colors.white70)),
+                const SizedBox(height: 3),
+                Obx(() => Text(
+                      controller.userName.value,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 21,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    )),
+                const SizedBox(height: 3),
                 const Text(
-                  'Welcome',
-                  style: TextStyle(
-                    color: Colors.white70,
-                    fontSize: 15,
-                  ),
-                ),
-
-                const SizedBox(height: 4),
-
-                Obx(
-                      () => Text(
-                    controller.userName.value,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 22,
-                      fontWeight:
-                      FontWeight.bold,
-                    ),
-                  ),
-                ),
-
-                const SizedBox(height: 4),
-
-                const Text(
-                  AppStrings.appName,
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 14,
-                  ),
+                  'How can we help you today?',
+                  style: TextStyle(color: Colors.white),
                 ),
               ],
             ),
+          ),
+          IconButton(
+            onPressed: controller.openEmergency,
+            tooltip: 'Emergency',
+            icon: const Icon(Icons.sos, color: Colors.white, size: 32),
           ),
         ],
       ),
     );
   }
 
-  // ==================================
-  // GENERIC VEHICLE CARD
-  // ==================================
-
-  Widget _buildVehicleCard({
-    required String title,
-    required String subtitle,
-    required IconData icon,
-    required Color color,
-    required VoidCallback onTap,
-  }) {
+  Widget _serviceCard(_CityService service) {
     return Material(
       color: Colors.white,
-      borderRadius:
-      BorderRadius.circular(18),
-      elevation: 3,
-      shadowColor: Colors.black12,
+      borderRadius: BorderRadius.circular(18),
       child: InkWell(
-        onTap: onTap,
-        borderRadius:
-        BorderRadius.circular(18),
+        onTap: service.onTap,
+        borderRadius: BorderRadius.circular(18),
         child: Container(
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
-            borderRadius:
-            BorderRadius.circular(18),
-            border: Border.all(
-              color: color.withAlpha(45),
-            ),
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: service.color.withAlpha(35)),
           ),
           child: Column(
-            mainAxisAlignment:
-            MainAxisAlignment.center,
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Container(
-                padding:
-                const EdgeInsets.all(13),
+                padding: const EdgeInsets.all(13),
                 decoration: BoxDecoration(
-                  color: color.withAlpha(25),
+                  color: service.color.withAlpha(22),
                   shape: BoxShape.circle,
                 ),
-                child: Icon(
-                  icon,
-                  size: 34,
-                  color: color,
-                ),
+                child: Icon(service.icon, color: service.color, size: 34),
               ),
-
-              const SizedBox(height: 10),
-
+              const SizedBox(height: 11),
               Text(
-                title,
+                service.title,
                 textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight:
-                  FontWeight.bold,
-                ),
+                style:
+                    const TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
               ),
-
-              const SizedBox(height: 4),
-
+              const SizedBox(height: 5),
               Text(
-                subtitle,
+                service.subtitle,
                 maxLines: 2,
-                overflow:
-                TextOverflow.ellipsis,
+                overflow: TextOverflow.ellipsis,
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  fontSize: 11,
-                  color:
-                  Colors.grey.shade600,
+                  fontSize: 11.5,
+                  height: 1.25,
+                  color: Colors.grey.shade600,
                 ),
               ),
             ],
@@ -550,124 +347,56 @@ class HomeView extends GetView<HomeController> {
     );
   }
 
-  // ==================================
-  // NORMAL FEATURE CARD
-  // ==================================
-
-  Widget _buildFeatureCard({
-    required String title,
-    required IconData icon,
-    required Color color,
-    required VoidCallback onTap,
-  }) {
+  Widget _travelBanner() {
     return Material(
-      color: Colors.white,
-      borderRadius:
-      BorderRadius.circular(16),
-      elevation: 2,
-      shadowColor: Colors.black12,
+      color: const Color(0xFFEDE7F6),
+      borderRadius: BorderRadius.circular(18),
       child: InkWell(
-        onTap: onTap,
-        borderRadius:
-        BorderRadius.circular(16),
-        child: Padding(
-          padding: const EdgeInsets.all(14),
-          child: Column(
-            mainAxisAlignment:
-            MainAxisAlignment.center,
+        onTap: controller.openIntercityTransport,
+        borderRadius: BorderRadius.circular(18),
+        child: const Padding(
+          padding: EdgeInsets.all(18),
+          child: Row(
             children: [
-              Container(
-                padding:
-                const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: color.withAlpha(30),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  icon,
-                  size: 32,
-                  color: color,
+              CircleAvatar(
+                backgroundColor: Color(0xFF5E35B1),
+                child: Icon(Icons.route, color: Colors.white),
+              ),
+              SizedBox(width: 13),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Travelling outside Piplan?',
+                        style: TextStyle(fontWeight: FontWeight.w800)),
+                    SizedBox(height: 4),
+                    Text('Check routes, departure times and contact numbers.'),
+                  ],
                 ),
               ),
-
-              const SizedBox(height: 10),
-
-              Text(
-                title,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontSize: 15,
-                  fontWeight:
-                  FontWeight.w600,
-                ),
-              ),
+              Icon(Icons.arrow_forward_ios, size: 17),
             ],
           ),
         ),
       ),
     );
   }
+}
 
-  // ==================================
-  // ANNOUNCEMENT CARD
-  // ==================================
+class _CityService {
+  const _CityService(
+    this.title,
+    this.subtitle,
+    this.category,
+    this.icon,
+    this.color,
+    this.onTap,
+  );
 
-  Widget _buildAnnouncementCard() {
-    return Card(
-      color: Colors.white,
-      elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius:
-        BorderRadius.circular(16),
-      ),
-      child: const Padding(
-        padding: EdgeInsets.all(16),
-        child: Row(
-          crossAxisAlignment:
-          CrossAxisAlignment.start,
-          children: [
-            CircleAvatar(
-              backgroundColor:
-              Color(0xFFE3F2FD),
-              child: Icon(
-                Icons.campaign,
-                color: Colors.blue,
-              ),
-            ),
-
-            SizedBox(width: 12),
-
-            Expanded(
-              child: Column(
-                crossAxisAlignment:
-                CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Welcome to Piplan Smart City',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight:
-                      FontWeight.bold,
-                    ),
-                  ),
-
-                  SizedBox(height: 6),
-
-                  Text(
-                    'City services and important '
-                        'announcements will be '
-                        'available here.',
-                    style: TextStyle(
-                      color: Colors.grey,
-                      height: 1.4,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+  final String title;
+  final String subtitle;
+  final String category;
+  final IconData icon;
+  final Color color;
+  final VoidCallback onTap;
 }
