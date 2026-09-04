@@ -43,9 +43,9 @@ class AdminView extends GetView<AdminController> {
 
               const SizedBox(height: 26),
 
-              const Text(
-                'My Ambulance',
-                style: TextStyle(
+              Text(
+                'My ${controller.serviceLabel}',
+                style: const TextStyle(
                   fontSize: 22,
                   fontWeight: FontWeight.bold,
                 ),
@@ -145,9 +145,9 @@ class AdminView extends GetView<AdminController> {
                     borderRadius:
                     BorderRadius.circular(12),
                   ),
-                  child: const Text(
-                    'Ambulance Administrator',
-                    style: TextStyle(
+                  child: Text(
+                    '${controller.serviceLabel} Administrator',
+                    style: const TextStyle(
                       color: Colors.white,
                       fontSize: 12,
                     ),
@@ -169,7 +169,8 @@ class AdminView extends GetView<AdminController> {
       Map<String, dynamic> ambulance,
       ) {
     final String imageUrl =
-        ambulance['ambulanceImage']
+        (ambulance['ambulanceImage'] ??
+                ambulance['vehicleImage'])
             ?.toString() ??
             '';
 
@@ -189,7 +190,8 @@ class AdminView extends GetView<AdminController> {
         ambulance['address']?.toString() ?? '';
 
     final String ambulanceType =
-        ambulance['ambulanceType']
+        (ambulance['ambulanceType'] ??
+                ambulance['vehicleType'])
             ?.toString() ??
             '';
 
@@ -205,7 +207,9 @@ class AdminView extends GetView<AdminController> {
 
     final List<String> facilities =
     List<String>.from(
-      ambulance['facilities'] ?? [],
+      ambulance['facilities'] ??
+          ambulance['features'] ??
+          [],
     );
 
     return Card(
@@ -1194,7 +1198,7 @@ class AdminView extends GetView<AdminController> {
   }
 
   Widget _noAmbulanceCard() {
-    return const Card(
+    return Card(
       child: Padding(
         padding: EdgeInsets.all(35),
         child: Column(
@@ -1206,8 +1210,8 @@ class AdminView extends GetView<AdminController> {
             ),
             SizedBox(height: 12),
             Text(
-              'No Ambulance Assigned',
-              style: TextStyle(
+              'No ${controller.serviceLabel} Assigned',
+              style: const TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
               ),
