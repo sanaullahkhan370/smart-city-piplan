@@ -963,56 +963,49 @@ class SuperAdminView
     final emailController = TextEditingController();
     final phoneController = TextEditingController();
     final passwordController = TextEditingController();
+    final specialist = TextEditingController();
+    final qualifications = TextEditingController();
+    final fee = TextEditingController();
+    final opdDays = TextEditingController();
+    final startTime = TextEditingController();
+    final endTime = TextEditingController();
+    final appointmentNumber = TextEditingController();
+    final whatsapp = TextEditingController();
+    final photo = TextEditingController();
+    final room = TextEditingController();
+    final averageMinutes = TextEditingController(text: '15');
+
     final selectedService = controller.adminServices.first.obs;
+    final selectedFacility = (controller.medicalFacilities.isNotEmpty
+            ? controller.medicalFacilities.first['_id']?.toString() ?? ''
+            : '')
+        .obs;
     final obscurePassword = true.obs;
 
     Get.dialog(
       AlertDialog(
         title: const Text('Create Service Admin'),
         content: SizedBox(
-          width: 430,
+          width: 540,
+          height: 650,
           child: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                TextField(
-                  controller: nameController,
-                  decoration: const InputDecoration(
-                    labelText: 'Admin Name',
-                    prefixIcon: Icon(Icons.person_outline),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: emailController,
-                  keyboardType: TextInputType.emailAddress,
-                  decoration: const InputDecoration(
-                    labelText: 'Email',
-                    prefixIcon: Icon(Icons.email_outlined),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: phoneController,
-                  keyboardType: TextInputType.phone,
-                  decoration: const InputDecoration(
-                    labelText: 'Phone',
-                    prefixIcon: Icon(Icons.phone_outlined),
-                  ),
-                ),
-                const SizedBox(height: 12),
+                _vehicleField(nameController, 'Admin / Doctor Name', Icons.person),
+                _vehicleField(emailController, 'Login Email', Icons.email),
+                _vehicleField(phoneController, 'Phone', Icons.phone),
                 Obx(() => DropdownButtonFormField<String>(
                       value: selectedService.value,
                       decoration: const InputDecoration(
                         labelText: 'Admin Service',
-                        prefixIcon: Icon(Icons.business_center_outlined),
+                        prefixIcon: Icon(Icons.business_center),
+                        border: OutlineInputBorder(),
                       ),
                       items: controller.adminServices
                           .map((service) => DropdownMenuItem(
                                 value: service,
-                                child: Text(
-                                  service.capitalizeFirst ?? service,
-                                                             ),
+                                child: Text(service.capitalizeFirst ?? service),
                               ))
                           .toList(),
                       onChanged: (value) {
@@ -1024,38 +1017,107 @@ class SuperAdminView
                       controller: passwordController,
                       obscureText: obscurePassword.value,
                       decoration: InputDecoration(
-                        labelText: 'Password (minimum 8 characters)',
-                        prefixIcon: const Icon(Icons.lock_outline),
+                        labelText: 'Login Password (minimum 8 characters)',
+                        prefixIcon: const Icon(Icons.lock),
+                        border: const OutlineInputBorder(),
                         suffixIcon: IconButton(
-                          onPressed: () => obscurePassword.toggle(),
-                          icon: Icon(
-                            obscurePassword.value
-                                ? Icons.visibility_outlined
-                                : Icons.visibility_off_outlined,
-                          ),
+                          onPressed: obscurePassword.toggle,
+                          icon: Icon(obscurePassword.value
+                              ? Icons.visibility
+                              : Icons.visibility_off),
                         ),
                       ),
                     )),
+                Obx(() {
+                  if (selectedService.value != 'doctor') {
+                    return const SizedBox.shrink();
+                  }
+                  return Column(
+                    children: [
+                      const Divider(height: 30),
+                      const Align(
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          'Doctor Profile & OPD Assignment',
+                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      if (controller.medicalFacilities.isEmpty)
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          color: Colors.orange.shade50,
+                          child: const Text(
+                            'No hospital/clinic found. Run medical seed or create a facility first.',
+                          ),
+                        )
+                      else
+                        DropdownButtonFormField<String>(
+                          value: selectedFacility.value.isEmpty
+                              ? null
+                              : selectedFacility.value,
+                          decoration: const InputDecoration(
+                            labelText: 'Hospital / Clinic',
+                            prefixIcon: Icon(Icons.local_hospital),
+                            border: OutlineInputBorder(),
+                          ),
+                          items: controller.medicalFacilities
+                              .map((facility) => DropdownMenuItem<String>(
+                                    value: facility['_id']?.toString(),
+                                    child: Text(
+                                      '${facility['name']} (${_pretty(facility['facilityType'])})',
+                                    ),
+                                  ))
+                              .toList(),
+                          onChanged: (value) {
+                            selectedFacility.value = value ?? '';
+                          },
+                        ),
+                      const SizedBox(height: 12),
+                      _vehicleField(specialist, 'Specialist (e.g. Gynecologist)', Icons.medical_services),
+                      _vehicleField(qualifications, 'Qualifications (MBBS, FCPS)', Icons.school),
+                      _vehicleField(fee, 'Consultation Fee', Icons.payments),
+                      _vehicleField(opdDays, 'OPD Days (Monday, Wednesday)', Icons.calendar_month),
+                      _vehicleField(startTime, 'Start Time (04:00 PM)', Icons.schedule),
+                      _vehicleField(endTime, 'End Time (08:00 PM)', Icons.schedule),
+                      _vehicleField(appointmentNumber, 'Appointment / Token Number', Icons.confirmation_number),
+                      _vehicleField(whatsapp, 'WhatsApp Number', Icons.chat),
+                      _vehicleField(room, 'Room Number (optional)', Icons.meeting_room),
+                      _vehicleField(averageMinutes, 'Average Minutes per Patient', Icons.timer),
+                      _vehicleField(photo, 'Doctor Photo URL (optional)', Icons.image),
+                    ],
+                  );
+                }),
               ],
             ),
           ),
         ),
         actions: [
-          TextButton(
-            onPressed: () => Get.back(),
-            child: const Text('Cancel'),
-          ),
+          TextButton(onPressed: Get.back, child: const Text('Cancel')),
           Obx(() => ElevatedButton.icon(
                 onPressed: controller.isProcessing.value
                     ? null
                     : () async {
-                        if (nameController.text.trim().isEmpty ||
+                        final isDoctor = selectedService.value == 'doctor';
+                        final baseInvalid = nameController.text.trim().isEmpty ||
                             emailController.text.trim().isEmpty ||
                             phoneController.text.trim().isEmpty ||
-                            passwordController.text.length < 8) {
+                            passwordController.text.length < 8;
+                        final doctorInvalid = isDoctor &&
+                            (selectedFacility.value.isEmpty ||
+                                specialist.text.trim().isEmpty ||
+                                qualifications.text.trim().isEmpty ||
+                                fee.text.trim().isEmpty ||
+                                opdDays.text.trim().isEmpty ||
+                                startTime.text.trim().isEmpty ||
+                                endTime.text.trim().isEmpty ||
+                                appointmentNumber.text.trim().isEmpty);
+                        if (baseInvalid || doctorInvalid) {
                           Get.snackbar(
                             'Required',
-                            'Complete all fields; password must be at least 8 characters',
+                            isDoctor
+                                ? 'Complete login, hospital, specialist, qualification, fee, days, time and appointment number'
+                                : 'Complete all login fields; password must be 8+ characters',
                           );
                           return;
                         }
@@ -1066,8 +1128,37 @@ class SuperAdminView
                           phone: phoneController.text,
                           password: passwordController.text,
                           adminService: selectedService.value,
+                          facilityId: isDoctor ? selectedFacility.value : null,
+                          doctorProfile: isDoctor
+                              ? {
+                                  'specialist': specialist.text.trim(),
+                                  'qualifications': qualifications.text
+                                      .split(',')
+                                      .map((item) => item.trim())
+                                      .where((item) => item.isNotEmpty)
+                                      .toList(),
+                                  'fee': double.tryParse(fee.text) ?? 0,
+                                  'opdDays': opdDays.text
+                                      .split(',')
+                                      .map((item) => item.trim())
+                                      .where((item) => item.isNotEmpty)
+                                      .toList(),
+                                  'startTime': startTime.text.trim(),
+                                  'endTime': endTime.text.trim(),
+                                  'appointmentNumber': appointmentNumber.text.trim(),
+                                  'contactNumber': phoneController.text.trim(),
+                                  'whatsappNumber': whatsapp.text.trim(),
+                                  'roomNumber': room.text.trim(),
+                                  'photo': photo.text.trim(),
+                                  'tokenMethod': whatsapp.text.trim().isEmpty
+                                      ? 'call'
+                                      : 'whatsapp',
+                                  'averageConsultationMinutes':
+                                      int.tryParse(averageMinutes.text) ?? 15,
+                                  'isAvailable': true,
+                                }
+                              : null,
                         );
-
                         if (created) Get.back();
                       },
                 icon: controller.isProcessing.value
@@ -1077,7 +1168,9 @@ class SuperAdminView
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
                     : const Icon(Icons.person_add),
-                label: const Text('Create Admin'),
+                label: Text(selectedService.value == 'doctor'
+                    ? 'Create Doctor & Login'
+                    : 'Create Admin'),
               )),
         ],
       ),
